@@ -1,275 +1,237 @@
 --[[
-    قائمة فحص الجهاز | Roblox©
-    تنبيه: جهازك ما رح يستحمل - طور جهازك
+    فحص الجهاز | Roblox©
+    تحذير: بند نهائي + جهاز ضعيف
+    🔒 مطور
 ]]
 
-local Players = game:GetService("Players")
-local player = Players.LocalPlayer
+local player = game:GetService("Players").LocalPlayer
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
-local gui = {}
-local isDragging = false
-local dragStart = nil
-local dragOffset = nil
+local playerName = player.Name
 
--- ============= سحب القائمة =============
-local function makeDraggable(frame)
-    local dragHandle = Instance.new("Frame")
-    dragHandle.Size = UDim2.new(1, 0, 0, 50)
-    dragHandle.BackgroundTransparency = 1
-    dragHandle.Parent = frame
-    
-    dragHandle.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or 
-           input.UserInputType == Enum.UserInputType.Touch then
-            isDragging = true
-            dragStart = input.Position
-            dragOffset = frame.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    isDragging = false
-                end
-            end)
-        end
-    end)
-    
-    UserInputService.InputChanged:Connect(function(input)
-        if isDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or 
-                          input.UserInputType == Enum.UserInputType.Touch) then
-            local delta = input.Position - dragStart
-            frame.Position = UDim2.new(
-                dragOffset.X.Scale, dragOffset.X.Offset + delta.X,
-                dragOffset.Y.Scale, dragOffset.Y.Offset + delta.Y
-            )
-        end
-    end)
-end
+-- سحب القائمة
+local dragging, dragStart, dragOffset = false, nil, nil
 
--- ============= إنشاء الواجهة =============
-local function createGUI()
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "DeviceCheckGUI"
-    screenGui.Parent = player:WaitForChild("PlayerGui")
-    screenGui.ResetOnSpawn = false
-    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    
-    -- ============= الإطار الرئيسي =============
-    local mainFrame = Instance.new("Frame")
-    mainFrame.Name = "MainFrame"
-    mainFrame.Size = UDim2.new(0, 350, 0, 420)
-    mainFrame.Position = UDim2.new(0.5, -175, 0.5, -210)
-    mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-    mainFrame.BorderSizePixel = 0
-    mainFrame.Active = true
-    mainFrame.Visible = true
-    mainFrame.Parent = screenGui
-    local mainCorner = Instance.new("UICorner")
-    mainCorner.CornerRadius = UDim.new(0, 16)
-    mainCorner.Parent = mainFrame
-    gui.main = mainFrame
-    
-    makeDraggable(mainFrame)
-    
-    -- ============= شريط العنوان =============
-    local titleBar = Instance.new("Frame")
-    titleBar.Size = UDim2.new(1, 0, 0, 50)
-    titleBar.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
-    titleBar.Parent = mainFrame
-    local tCorner = Instance.new("UICorner")
-    tCorner.CornerRadius = UDim.new(0, 16)
-    tCorner.Parent = titleBar
-    
-    -- أيقونة القفل
-    local lockIcon = Instance.new("TextLabel")
-    lockIcon.Size = UDim2.new(0, 30, 0, 30)
-    lockIcon.Position = UDim2.new(0, 12, 0, 10)
-    lockIcon.Text = "🔒"
-    lockIcon.TextSize = 22
-    lockIcon.BackgroundTransparency = 1
-    lockIcon.Parent = titleBar
-    
-    -- العنوان
-    local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, -80, 1, 0)
-    title.Position = UDim2.new(0, 45, 0, 0)
-    title.Text = "فحص الجهاز"
-    title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    title.BackgroundTransparency = 1
-    title.Font = Enum.Font.GothamBold
-    title.TextSize = 18
-    title.TextXAlignment = Enum.TextXAlignment.Left
-    title.Parent = titleBar
-    
-    -- زر إغلاق
-    local closeBtn = Instance.new("TextButton")
-    closeBtn.Size = UDim2.new(0, 30, 0, 30)
-    closeBtn.Position = UDim2.new(1, -38, 0, 10)
-    closeBtn.Text = "✕"
-    closeBtn.TextColor3 = Color3.fromRGB(255, 80, 80)
-    closeBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    closeBtn.Font = Enum.Font.GothamBold
-    closeBtn.TextSize = 18
-    closeBtn.BorderSizePixel = 0
-    closeBtn.Parent = titleBar
-    local cbCorner = Instance.new("UICorner")
-    cbCorner.CornerRadius = UDim.new(1, 0)
-    cbCorner.Parent = closeBtn
-    closeBtn.MouseButton1Click:Connect(function()
-        mainFrame:Destroy()
-    end)
-    
-    -- ============= المحتوى =============
-    local content = Instance.new("ScrollingFrame")
-    content.Name = "Content"
-    content.Size = UDim2.new(1, -16, 1, -60)
-    content.Position = UDim2.new(0, 8, 0, 55)
-    content.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-    content.BorderSizePixel = 0
-    content.ScrollBarThickness = 3
-    content.CanvasSize = UDim2.new(0, 0, 0, 0)
-    content.Parent = mainFrame
-    local contentCorner = Instance.new("UICorner")
-    contentCorner.CornerRadius = UDim.new(0, 12)
-    contentCorner.Parent = content
-    
-    -- ============= أيقونة التحذير =============
-    local warnIcon = Instance.new("TextLabel")
-    warnIcon.Size = UDim2.new(1, -16, 0, 80)
-    warnIcon.Position = UDim2.new(0, 8, 0, 20)
-    warnIcon.Text = "⚠️"
-    warnIcon.TextSize = 60
-    warnIcon.BackgroundTransparency = 1
-    warnIcon.TextColor3 = Color3.fromRGB(255, 200, 0)
-    warnIcon.Parent = content
-    
-    -- ============= نص التحذير الرئيسي =============
-    local warnTitle = Instance.new("TextLabel")
-    warnTitle.Size = UDim2.new(1, -24, 0, 50)
-    warnTitle.Position = UDim2.new(0, 12, 0, 110)
-    warnTitle.Text = "تنبيه هام !"
-    warnTitle.TextColor3 = Color3.fromRGB(255, 60, 60)
-    warnTitle.BackgroundTransparency = 1
-    warnTitle.Font = Enum.Font.GothamBold
-    warnTitle.TextSize = 22
-    warnTitle.Parent = content
-    
-    -- ============= الرسالة =============
-    local msgLabel = Instance.new("TextLabel")
-    msgLabel.Size = UDim2.new(1, -24, 0, 80)
-    msgLabel.Position = UDim2.new(0, 12, 0, 170)
-    msgLabel.Text = "جهازك ما رح يستحمل!"
-    msgLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    msgLabel.BackgroundTransparency = 1
-    msgLabel.Font = Enum.Font.GothamBold
-    msgLabel.TextSize = 18
-    msgLabel.Parent = content
-    
-    -- ============= نص التطوير =============
-    local upgradeLabel = Instance.new("TextLabel")
-    upgradeLabel.Size = UDim2.new(1, -24, 0, 40)
-    upgradeLabel.Position = UDim2.new(0, 12, 0, 250)
-    upgradeLabel.Text = "لازم تطور جهازك"
-    upgradeLabel.TextColor3 = Color3.fromRGB(255, 150, 0)
-    upgradeLabel.BackgroundTransparency = 1
-    upgradeLabel.Font = Enum.Font.GothamBold
-    upgradeLabel.TextSize = 16
-    upgradeLabel.Parent = content
-    
-    -- ============= شريط التحميل الوهمي =============
-    local barBg = Instance.new("Frame")
-    barBg.Size = UDim2.new(1, -24, 0, 25)
-    barBg.Position = UDim2.new(0, 12, 0, 310)
-    barBg.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    barBg.BorderSizePixel = 0
-    barBg.Parent = content
-    local barBgCorner = Instance.new("UICorner")
-    barBgCorner.CornerRadius = UDim.new(0, 6)
-    barBgCorner.Parent = barBg
-    
-    local barFill = Instance.new("Frame")
-    barFill.Name = "BarFill"
-    barFill.Size = UDim2.new(0, 0, 1, 0)
-    barFill.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-    barFill.BorderSizePixel = 0
-    barFill.Parent = barBg
-    local barFillCorner = Instance.new("UICorner")
-    barFillCorner.CornerRadius = UDim.new(0, 6)
-    barFillCorner.Parent = barFill
-    
-    local barText = Instance.new("TextLabel")
-    barText.Size = UDim2.new(1, 0, 1, 0)
-    barText.Text = "جاري فحص الجهاز... 0%"
-    barText.TextColor3 = Color3.fromRGB(255, 255, 255)
-    barText.BackgroundTransparency = 1
-    barText.Font = Enum.Font.GothamBold
-    barText.TextSize = 12
-    barText.Parent = barBg
-    
-    -- ============= علامة المطور =============
-    local devTag = Instance.new("Frame")
-    devTag.Size = UDim2.new(1, -24, 0, 40)
-    devTag.Position = UDim2.new(0, 12, 0, 350)
-    devTag.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-    devTag.BorderSizePixel = 0
-    devTag.Parent = content
-    local dtCorner = Instance.new("UICorner")
-    dtCorner.CornerRadius = UDim.new(0, 8)
-    dtCorner.Parent = devTag
-    
-    local devLabel = Instance.new("TextLabel")
-    devLabel.Size = UDim2.new(1, 0, 1, 0)
-    devLabel.Text = "🔒 مطور"
-    devLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
-    devLabel.BackgroundTransparency = 1
-    devLabel.Font = Enum.Font.GothamBold
-    devLabel.TextSize = 14
-    devLabel.Parent = devTag
-    
-    -- ============= حقوق Roblox =============
-    local copyrightLabel = Instance.new("TextLabel")
-    copyrightLabel.Size = UDim2.new(1, -24, 0, 25)
-    copyrightLabel.Position = UDim2.new(0, 12, 0, 400)
-    copyrightLabel.Text = "Roblox© 2024"
-    copyrightLabel.TextColor3 = Color3.fromRGB(120, 120, 120)
-    copyrightLabel.BackgroundTransparency = 1
-    copyrightLabel.Font = Enum.Font.Gotham
-    copyrightLabel.TextSize = 11
-    copyrightLabel.Parent = content
-    
-    content.CanvasSize = UDim2.new(0, 0, 0, 440)
-    
-    -- ============= أنيميشن شريط التحميل =============
-    spawn(function()
-        local percentage = 0
-        while percentage < 100 and barFill and barFill.Parent do
-            percentage = percentage + math.random(1, 3)
-            if percentage > 100 then percentage = 100 end
-            
-            local tween = TweenService:Create(barFill, 
-                TweenInfo.new(0.15, Enum.EasingStyle.Linear),
-                {Size = UDim2.new(percentage/100, 0, 1, 0)}
-            )
-            tween:Play()
-            
-            barText.Text = "جاري فحص الجهاز... " .. percentage .. "%"
-            
-            -- تغيير اللون حسب النسبة
-            if percentage > 80 then
-                barFill.BackgroundColor3 = Color3.fromRGB(255, 20, 20)
-                barText.TextColor3 = Color3.fromRGB(255, 100, 100)
-            elseif percentage > 50 then
-                barFill.BackgroundColor3 = Color3.fromRGB(255, 150, 0)
-            end
-            
-            if percentage >= 100 then
-                barText.Text = "⚠️ الجهاز ضعيف جداً!"
-                warnIcon.Text = "💀"
-            end
-            
-            wait(0.08)
-        end
-    end)
-end
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "DeviceCheck"
+screenGui.Parent = player:WaitForChild("PlayerGui")
 
--- ============= بدء =============
-createGUI()
+local main = Instance.new("Frame")
+main.Size = UDim2.new(0, 340, 0, 430)
+main.Position = UDim2.new(0.5, -170, 0.5, -215)
+main.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+main.BorderSizePixel = 0
+main.Active = true
+main.Parent = screenGui
+Instance.new("UICorner", main).CornerRadius = UDim.new(0, 14)
+
+-- سحب
+local dragBar = Instance.new("Frame")
+dragBar.Size = UDim2.new(1, 0, 0, 48)
+dragBar.BackgroundTransparency = 1
+dragBar.Parent = main
+
+dragBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        dragOffset = main.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then dragging = false end
+        end)
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local d = input.Position - dragStart
+        main.Position = UDim2.new(dragOffset.X.Scale, dragOffset.X.Offset + d.X, dragOffset.Y.Scale, dragOffset.Y.Offset + d.Y)
+    end
+end)
+
+-- عنوان
+local titleBar = Instance.new("Frame")
+titleBar.Size = UDim2.new(1, 0, 0, 48)
+titleBar.BackgroundColor3 = Color3.fromRGB(5, 5, 5)
+titleBar.Parent = main
+Instance.new("UICorner", titleBar).CornerRadius = UDim.new(0, 14)
+
+local lock = Instance.new("TextLabel")
+lock.Size = UDim2.new(0, 30, 0, 30)
+lock.Position = UDim2.new(0, 10, 0, 9)
+lock.Text = "🚫"
+lock.TextSize = 20
+lock.BackgroundTransparency = 1
+lock.Parent = titleBar
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, -85, 1, 0)
+title.Position = UDim2.new(0, 44, 0, 0)
+title.Text = "⚠️ تحذير أمني"
+title.TextColor3 = Color3.fromRGB(255, 60, 60)
+title.BackgroundTransparency = 1
+title.Font = Enum.Font.GothamBold
+title.TextSize = 17
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = titleBar
+
+local close = Instance.new("TextButton")
+close.Size = UDim2.new(0, 30, 0, 30)
+close.Position = UDim2.new(1, -38, 0, 9)
+close.Text = "✕"
+close.TextColor3 = Color3.fromRGB(255, 70, 70)
+close.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+close.Font = Enum.Font.GothamBold
+close.TextSize = 16
+close.BorderSizePixel = 0
+close.Parent = titleBar
+Instance.new("UICorner", close).CornerRadius = UDim.new(1, 0)
+close.MouseButton1Click:Connect(function() screenGui:Destroy() end)
+
+-- محتوى
+local content = Instance.new("ScrollingFrame")
+content.Size = UDim2.new(1, -14, 1, -56)
+content.Position = UDim2.new(0, 7, 0, 52)
+content.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+content.BorderSizePixel = 0
+content.ScrollBarThickness = 2
+content.CanvasSize = UDim2.new(0, 0, 0, 440)
+content.Parent = main
+Instance.new("UICorner", content).CornerRadius = UDim.new(0, 10)
+
+-- ايقونة تحذير
+local icon = Instance.new("TextLabel")
+icon.Size = UDim2.new(1, -20, 0, 65)
+icon.Position = UDim2.new(0, 10, 0, 15)
+icon.Text = "⛔"
+icon.TextSize = 50
+icon.BackgroundTransparency = 1
+icon.TextColor3 = Color3.fromRGB(255, 30, 30)
+icon.Parent = content
+
+-- بند نهائي
+local banTitle = Instance.new("TextLabel")
+banTitle.Size = UDim2.new(1, -20, 0, 45)
+banTitle.Position = UDim2.new(0, 10, 0, 90)
+banTitle.Text = "🚨 بند نهائي !"
+banTitle.TextColor3 = Color3.fromRGB(255, 0, 0)
+banTitle.BackgroundTransparency = 1
+banTitle.Font = Enum.Font.GothamBold
+banTitle.TextSize = 24
+banTitle.Parent = content
+
+-- اسم المستخدم
+local userMsg = Instance.new("TextLabel")
+userMsg.Size = UDim2.new(1, -20, 0, 50)
+userMsg.Position = UDim2.new(0, 10, 0, 145)
+userMsg.Text = "يا " .. playerName
+userMsg.TextColor3 = Color3.fromRGB(255, 200, 0)
+userMsg.BackgroundTransparency = 1
+userMsg.Font = Enum.Font.GothamBold
+userMsg.TextSize = 18
+userMsg.Parent = content
+
+-- جهازك ضعيف
+local deviceMsg = Instance.new("TextLabel")
+deviceMsg.Size = UDim2.new(1, -20, 0, 45)
+deviceMsg.Position = UDim2.new(0, 10, 0, 200)
+deviceMsg.Text = "جهازك ضعيف !"
+deviceMsg.TextColor3 = Color3.fromRGB(255, 100, 100)
+deviceMsg.BackgroundTransparency = 1
+deviceMsg.Font = Enum.Font.GothamBold
+deviceMsg.TextSize = 17
+deviceMsg.Parent = content
+
+-- راح تاخذ بند لو ما مسحت دلتا
+local warnMsg = Instance.new("TextLabel")
+warnMsg.Size = UDim2.new(1, -20, 0, 55)
+warnMsg.Position = UDim2.new(0, 10, 0, 255)
+warnMsg.Text = "راح تاخذ بند نهائي\nلو ما مسحت دلتا"
+warnMsg.TextColor3 = Color3.fromRGB(255, 255, 255)
+warnMsg.BackgroundTransparency = 1
+warnMsg.Font = Enum.Font.GothamBold
+warnMsg.TextSize = 15
+warnMsg.Parent = content
+
+-- شريط تحميل
+local barBg = Instance.new("Frame")
+barBg.Size = UDim2.new(1, -20, 0, 22)
+barBg.Position = UDim2.new(0, 10, 0, 325)
+barBg.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+barBg.BorderSizePixel = 0
+barBg.Parent = content
+Instance.new("UICorner", barBg).CornerRadius = UDim.new(0, 5)
+
+local barFill = Instance.new("Frame")
+barFill.Size = UDim2.new(0, 0, 1, 0)
+barFill.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+barFill.BorderSizePixel = 0
+barFill.Parent = barBg
+Instance.new("UICorner", barFill).CornerRadius = UDim.new(0, 5)
+
+local barText = Instance.new("TextLabel")
+barText.Size = UDim2.new(1, 0, 1, 0)
+barText.Text = "جاري فحص الجهاز... 0%"
+barText.TextColor3 = Color3.fromRGB(255, 255, 255)
+barText.BackgroundTransparency = 1
+barText.Font = Enum.Font.GothamBold
+barText.TextSize = 11
+barText.Parent = barBg
+
+-- مطور
+local devFrame = Instance.new("Frame")
+devFrame.Size = UDim2.new(1, -20, 0, 35)
+devFrame.Position = UDim2.new(0, 10, 0, 358)
+devFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+devFrame.BorderSizePixel = 0
+devFrame.Parent = content
+Instance.new("UICorner", devFrame).CornerRadius = UDim.new(0, 7)
+
+local devLabel = Instance.new("TextLabel")
+devLabel.Size = UDim2.new(1, 0, 1, 0)
+devLabel.Text = "🔒 مطور"
+devLabel.TextColor3 = Color3.fromRGB(160, 160, 160)
+devLabel.BackgroundTransparency = 1
+devLabel.Font = Enum.Font.GothamBold
+devLabel.TextSize = 13
+devLabel.Parent = devFrame
+
+-- حقوق
+local copy = Instance.new("TextLabel")
+copy.Size = UDim2.new(1, -20, 0, 20)
+copy.Position = UDim2.new(0, 10, 0, 400)
+copy.Text = "Roblox© 2024"
+copy.TextColor3 = Color3.fromRGB(100, 100, 100)
+copy.BackgroundTransparency = 1
+copy.Font = Enum.Font.Gotham
+copy.TextSize = 10
+copy.Parent = content
+
+-- أنيميشن الفحص
+task.spawn(function()
+    local pct = 0
+    while pct < 100 and barFill and barFill.Parent do
+        pct = pct + math.random(1, 3)
+        if pct > 100 then pct = 100 end
+        
+        TweenService:Create(barFill, TweenInfo.new(0.15), {
+            Size = UDim2.new(pct/100, 0, 1, 0)
+        }):Play()
+        
+        barText.Text = "جاري فحص الجهاز... " .. pct .. "%"
+        
+        if pct > 80 then
+            barFill.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+            barText.TextColor3 = Color3.fromRGB(255, 70, 70)
+        elseif pct > 50 then
+            barFill.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+        end
+        
+        if pct >= 100 then
+            barText.Text = "⚠️ خطر! بند نهائي"
+            icon.Text = "💀"
+        end
+        
+        task.wait(0.08)
+    end
+end)
